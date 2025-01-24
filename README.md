@@ -120,7 +120,7 @@ stableCoin.getLatestPrice(priceUpdateData);
 ---
 
 ## **Contributors**  
-- **[Hassan Ali/aasanhai.pk]** – Development Lead  
+- **Hassan Ali/aasanhai.pk** – Development Lead  
 
 ---
 
@@ -141,5 +141,4 @@ We appreciate your interest and contributions in building a more stable and acce
 
 ---
 
-**#StableCoin #Crypto #Blockchain #DeFi #BinanceSmartChain #Web3 #Tokenization**
 
