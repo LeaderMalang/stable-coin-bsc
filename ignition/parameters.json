@@ -1,0 +1,10 @@
+{
+  "KhacToken": {
+    "priceFeedId": "",
+    "pythOracle": "",
+    "tokenName": "",
+    "tokenSymbol": "",
+    "initialSupply": "",
+    "maxSupply": "",
+  }
+}
