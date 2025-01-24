@@ -133,7 +133,7 @@ This project is licensed under the [MIT License](LICENSE).
 Follow our progress and contribute to the project:  
 
 - 🌐 [Website](https://aasanhai.pk)   
-- 📩 Contact us: [hassanali5120@gmail.com](mailto:email@example.com)  
+- 📩 Contact us: [hassanali5120@gmail.com](mailto:hassanali5120@gmail.com)  
 
 ---
 
