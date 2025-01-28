@@ -1,145 +1,159 @@
-# **USD-Pegged Stable Coin Project**  
-
-Welcome to the official repository for our **USD-pegged stable coin**, a secure and transparent digital asset built on the **Binance Smart Chain (BSC)** and backed 1:1 by USD reserves. This project aims to provide a reliable and scalable solution for decentralized finance (DeFi) and centralized exchanges (CEXs).  
+Your README is clear and detailed, but here are some improvements and adjustments to ensure precision and alignment with your latest updates:
 
 ---
 
-## **Project Overview**  
+### **Updated README**
 
-Our stable coin is designed to ensure price stability and trustworthiness through manual operations initially, with a roadmap for future automation. It includes features such as:  
+# **USD-Pegged Stable Coin Project**
 
-- **Pyth Oracle Integration:** Real-time price feeds to maintain USD peg accuracy.  
-- **Manual Minting & Burning:** Controlled via admin functions for precise supply adjustments.  
-- **Blacklisting & Freezing:** Enhanced security measures to prevent misuse.  
-- **Centralized Management:** Efficient admin control with future integration possibilities.  
+Welcome to the official repository of the **USD-pegged stable coin**, a secure, scalable, and transparent digital asset built on the **Binance Smart Chain (BSC)** and backed 1:1 by USD reserves. This project offers reliability for decentralized finance (DeFi) and centralized exchange (CEX) platforms.
 
 ---
 
-## **Smart Contract Features**  
+## **Project Overview**
 
-### **1. Minting and Burning (Admin-Only Control)**  
-- Minting new tokens is restricted to the admin to ensure a controlled supply.  
-- Tokens can be burned when users redeem USD.  
-- Both actions are manually managed initially for maximum oversight.  
+This stable coin ensures price stability and trustworthiness with real-time oracle integrations and robust admin controls. Initially, operations like minting and burning are manual, with automation planned in future updates.
 
-### **2. Blacklisting and Freezing**  
-- The admin can blacklist suspicious accounts to prevent transactions.  
-- Contract pause/unpause functionality for emergency scenarios.  
-
-### **3. Price Floor Enforcement**  
-- Transactions below a specific price threshold are restricted.  
-- Ensures peg stability with real-time oracle updates.  
-
-### **4. Oracle Integration**  
-- Uses **Pyth Network** oracles for accurate USD pricing.  
-- Supports future upgrades to automate operations with CEX or financial institutions.  
+### **Key Features**
+- **Pyth Oracle Integration:** Real-time price feeds for accurate USD peg maintenance.
+- **Admin-Controlled Minting & Burning:** Precise supply management to match USD reserves.
+- **Blacklisting & Freezing Accounts:** Enhanced security for fraud prevention.
+- **Centralized Management:** Manual operations, with future CEX and API integrations.
+- **Dynamic Supply Adjustments:** Based on real-time price updates to maintain peg accuracy.
 
 ---
 
-## **Deployment Steps**  
+## **Smart Contract Features**
 
-Follow these steps to deploy the smart contract on Binance Smart Chain (BSC):  
+### **1. Minting and Burning (Admin-Only)**
+- Admin-only functionality to mint tokens backed by USD reserves.
+- Tokens can be burned upon USD redemption.
+- Ensures reserves match the circulating supply.
 
-### **Prerequisites**  
-- Node.js and npm installed  
-- Hardhat for contract compilation and deployment  
-- Binance Smart Chain (BSC) wallet setup  
+### **2. Security Measures**
+- **Blacklist Accounts:** Prevent transactions from flagged addresses.
+- **Freeze Accounts:** Temporarily restrict activities of flagged accounts.
+- **Pause Contract:** Admin can pause all operations during emergencies.
 
-### **Installation**  
+### **3. Price Floor Enforcement**
+- Prevents transactions below a minimum price threshold (1 USD equivalent).
+- Powered by **Pyth Network Oracles** for real-time price validation.
+
+### **4. Oracle Integration**
+- Real-time USD price feed using **Pyth Network**.
+- Plans for future integration with CEXs and API-based reserve tracking.
+
+---
+
+## **Deployment Steps**
+
+### **Prerequisites**
+1. Install [Node.js](https://nodejs.org/) and npm.
+2. Install Hardhat globally: `npm install --global hardhat`.
+3. Set up a Binance Smart Chain wallet and obtain testnet/mainnet credentials.
+
+### **Installation**
+Clone the repository and install dependencies:
 ```bash
 npm install
 ```
 
-### **Compilation**  
+### **Compilation**
+Compile the contract using Hardhat:
 ```bash
 npx hardhat compile
 ```
 
-### **Deployment**  
+### **Deployment**
+Deploy the contract to BSC:
 ```bash
-   npx hardhat ignition deploy ignition/modules/StableCoin.js --network bsc_mainnet --parameters ignition/parameters.json --verify
-   ```
+npx hardhat ignition deploy ignition/modules/StableCoin.js --network bsc_mainnet --parameters ignition/p
+arameters.json --verify
+```
 
 ---
 
-## **Testing the Contract**  
+## **Testing the Contract**
 
-The project includes a test suite to validate the functionality of the stable coin smart contract. Tests include:
+### **Testing Framework**
+- **Deployment Tests:** Ensure correct owner assignment and initial supply allocation.
+- **Transaction Tests:** Verify transfers, events, and blacklist functionality.
+- **Minting/Burning Tests:** Validate token supply management.
+- **Oracle Tests:** Mock and validate dynamic price updates.
 
-- Deployment verification (owner assignment, initial supply allocation)
-- Transactions (transfers, events, blacklisting)
-- Minting and burning functionality
-- Oracle price updates
-- Contract pausing/unpausing
-
-### **Run Tests:**  
+### **Run Tests**
+Run the test suite:
 ```bash
 npx hardhat test
 ```
 
-Ensure the following environment variables are set in the `.env` file:
-
+### **Environment Variables**
+Set up a `.env` file with the following values:
 ```plaintext
-PYTH_ORACLE=0xYourOracleAddressHere
-PRICE_FEED_ID=0xYourPriceFeedIdHere
-PRIVATE_KEY=0xYourPrivateKey
-API_KEY=YourBSCAPIKEY
+PYTH_ORACLE=0xYourOracleAddress
+PRICE_FEED_ID=0xYourPriceFeedId
+PRIVATE_KEY=YourPrivateKey
+API_KEY=YourBSCScanAPIKey
 ```
 
 ---
 
-## **Contract Usage**  
+## **Contract Usage**
 
-### **Mint Tokens**  
+### **Mint Tokens**
 ```solidity
-stableCoin.mint("0xRecipientAddress", 1000 * 10**18);
+stableCoin.mint("0xRecipientAddress", ethers.utils.parseUnits("1000", 18));
 ```
 
-### **Burn Tokens**  
+### **Burn Tokens**
 ```solidity
-stableCoin.burn(500 * 10**18);
+stableCoin.burn(ethers.utils.parseUnits("500", 18));
 ```
 
-### **Blacklist Address**  
+### **Blacklist an Address**
 ```solidity
 stableCoin.setBlacklist("0xMaliciousAddress", true);
 ```
 
-### **Update Oracle Data**  
+### **Update Oracle Price**
 ```solidity
 stableCoin.getLatestPrice(priceUpdateData);
 ```
 
----
-
-## **Future Plans**  
-- **CEX Integration:** Automating minting and burning based on FIAT deposits/withdrawals.  
-- **Cross-Chain Deployment:** Expansion to Polygon, Arbitrum, and Base.  
-- **Audit and Compliance:** Ensuring full transparency and regulatory alignment.  
-
----
-
-## **Contributors**  
-- **[Hassan Ali/aasanhai.pk]** – Development Lead  
+### **Pause/Unpause Contract**
+```solidity
+stableCoin.pauseContract();
+stableCoin.unpauseContract();
+```
 
 ---
 
-## **License**  
-This project is licensed under the [MIT License](LICENSE).  
+## **Future Plans**
+- **Automated Reserve Tracking:** Integration with custodians and financial APIs for automated supply adjustments.
+- **CEX Integration:** Support for minting and burning based on fiat deposits and withdrawals.
+- **Cross-Chain Support:** Deployment on additional blockchains like Polygon, Arbitrum, and Base.
+- **Audits:** Regular smart contract audits to ensure compliance and security.
 
 ---
 
-## **Get Involved**  
-Follow our progress and contribute to the project:  
-
-- 🌐 [Website](https://aasanhai.pk)   
-- 📩 Contact us: [hassanali5120@gmail.com](mailto:email@example.com)  
+## **Contributors**
+- **[Hassan Ali](mailto:hassanali5120@gmail.com)** – Development Lead
 
 ---
 
-We appreciate your interest and contributions in building a more stable and accessible digital economy!  
+## **License**
+This project is licensed under the [MIT License](LICENSE).
 
 ---
+
+## **Get Involved**
+
+Follow our progress or contribute to the project:
+- 🌐 [Website](https://aasanhai.pk)
+- 📧 [Contact Us](mailto:hassanali5120@gmail.com)
+
+---
+
+We appreciate your interest in building a stable and accessible digital economy!
 
 **#StableCoin #Crypto #Blockchain #DeFi #BinanceSmartChain #Web3 #Tokenization**
-
