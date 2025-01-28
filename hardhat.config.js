@@ -8,7 +8,7 @@ const API_KEY = process.env.API_KEY;
 module.exports = {
   solidity: {
    
-        version: "0.8.20",
+        version: "0.8.22",
         settings: {
           evmVersion: "istanbul",
           optimizer: {
@@ -25,8 +25,8 @@ module.exports = {
       gasPrice: "auto", // Automatically estimate gas price
     },
     bsc_mainnet: {
-      url: "https://mainnet.infura.io/v3/d1f95888fba84a42aa37803d4b5118ee",
-      accounts: [`0x${PRIVATE_KEY}`],
+      url: "https://data-seed-prebsc-1-s1.binance.org:8545",
+      accounts: [PRIVATE_KEY],
       gas: "auto",
       //gasPrice: 25000000000, // 25 gwei (adjust based on Eth's current gas price)
       allowUnlimitedContractSize: true,
