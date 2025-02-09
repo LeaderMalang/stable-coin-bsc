@@ -1,8 +1,3 @@
-Your README is clear and detailed, but here are some improvements and adjustments to ensure precision and alignment with your latest updates:
-
----
-
-### **Updated README**
 
 # **USD-Pegged Stable Coin Project**
 

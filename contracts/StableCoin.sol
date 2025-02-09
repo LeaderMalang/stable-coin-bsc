@@ -1,193 +1,90 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
-import "@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@pancakeswap-libs/pancake-swap-core/contracts/interfaces/IPancakePair.sol";
+import "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 
-contract StableCoin is ERC20, Ownable, ReentrancyGuard, Pausable {
-    IPyth pyth;
-    address public pythOracle;
-    uint256 public immutable maxSupply;
-    bytes32 public usdtUsdPriceFeedId; // Pyth price feed ID for Bnb/USD.
-    uint256 public constant SCALING_FACTOR = 1e6; // Scaling factor to manage decimals for price.
-    uint256 private constant PRICE_FLOOR = 1 * SCALING_FACTOR; // in USD // in USD
-    uint256 public reserveBalance; // USD reserves (in cents or wei)
+interface IPancakeStableSwapRouter {
+    function swapExactTokensForTokens(
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external returns (uint256[] memory amounts);
+}
 
-    mapping(address => bool) public blacklisted;
-    mapping(address => bool) public frozen;
+contract StableCoin is ERC20Burnable, ERC20Pausable, Ownable {
+    IPancakeStableSwapRouter public pancakeRouter;
+    AggregatorV3Interface internal priceFeed;
+    address public stableSwapRouter;
+    address public usdt;
+    uint256 public minPegThreshold = 99 * 1e6; // 0.99 USDT in 8 decimals
+    uint256 public maxPegThreshold = 101 * 1e6; // 1.01 USDT in 8 decimals
 
-    event Mint(address indexed to, uint256 amount);
-    event Burn(address indexed from, uint256 amount);
-    event Blacklisted(address indexed account, bool status);
-    event Frozen(address indexed account, bool status);
-    event OracleUpdated(address indexed newOracle);
+    event PegRebalanced(uint24 newLpFee);
 
-    /**
-     * @param _pythOracle The address of the Pyth contract
-     */
-    constructor(
-        string memory name,
-        string memory symbol,
-        uint256 initialSupply,
-        uint256 _maxSupply,
-        bytes32 _usdtUsdPriceFeedId,
-        address _pythOracle
-    ) payable ERC20(name, symbol) Ownable(_msgSender()) {
-        require(
-            initialSupply <= _maxSupply,
-            "Initial supply exceeds max supply"
+    constructor(address _router, address _priceFeed, address _usdt) ERC20("MyStableCoin", "MSC") Ownable(msg.sender) {
+        _mint(msg.sender, 1000000 * 10 ** decimals()); // Mint 1 million tokens to deployer
+        stableSwapRouter = _router;
+        pancakeRouter = IPancakeStableSwapRouter(_router);
+        priceFeed = AggregatorV3Interface(_priceFeed);
+        usdt = _usdt;
+    }
+
+    function getLatestPrice() public view returns (uint256) {
+        (, int price,,,) = priceFeed.latestRoundData();
+        require(price > 0, "Invalid price feed");
+        return uint256(price);
+    }
+
+    function mint(uint256 amount) external onlyOwner {
+        require(getLatestPrice() >= 1e8, "Price below peg");
+        _mint(msg.sender, amount);
+    }
+
+    function _swap(
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external whenNotPaused returns (uint256[] memory amounts) {
+        require(balanceOf(msg.sender) >= amountIn, "Insufficient balance");
+        require(path.length >= 2, "Invalid path");
+        require(path[0] == address(this) && path[path.length - 1] == usdt, "Invalid stablecoin path");
+        
+        _approve(msg.sender, stableSwapRouter, amountIn);
+        amounts = pancakeRouter.swapExactTokensForTokens(
+            amountIn,
+            amountOutMin,
+            path,
+            to,
+            deadline
         );
-        _mint(_msgSender(), initialSupply);
-        maxSupply = _maxSupply;
-        pythOracle = _pythOracle;
-        //pyth = IPyth(_pythOracle);
-        usdtUsdPriceFeedId = _usdtUsdPriceFeedId;
-
-        // The IPyth interface from pyth-sdk-solidity provides the methods to interact with the Pyth contract.
-        // Instantiate it with the Pyth contract address from https://docs.pyth.network/price-feeds/contract-addresses/evm
-        pyth = IPyth(_pythOracle);
     }
 
-    // Modifier for enforcing price floor before transactions.
-    modifier enforcePriceFloor(uint256 khacnAmount) {
-        require(
-            isAbovePriceFloor(khacnAmount),
-            "Transaction below price floor"
-        );
-        _;
+    function rebalancePeg() external onlyOwner {
+        uint256 currentPrice = getLatestPrice();
+        uint24 newLpFee = 3000; // Default fee (0.3%)
+        if (currentPrice < minPegThreshold) {
+            newLpFee = newLpFee + 1000; // Increase fee if below peg
+        } else if (currentPrice > maxPegThreshold) {
+            newLpFee = newLpFee - 1000; // Reduce fee if above peg
+        }
+        emit PegRebalanced(newLpFee);
     }
-
-    /**
-     * @dev Checks if the transaction is above the price floor.
-     * @param stableCoinAmount Amount of KHACN tokens.
-     */
-    function isAbovePriceFloor(uint256 stableCoinAmount)
-        public
-        view
-        returns (bool)
-    {
-        PythStructs.Price memory price = pyth.getPriceNoOlderThan(
-            usdtUsdPriceFeedId,
-            30
-        );
-        require(price.price > 0, "Invalid price data"); // Ensure positive price
-        // Scale price with its exponent (e.g., price.price * 10^price.expo)
-        uint256 scaledPrice = uint256(uint64(price.price)) * (10 ** uint256(int256(-price.expo)));
-        uint256 stableCoinValue = (scaledPrice * stableCoinAmount) / SCALING_FACTOR;
-        return stableCoinValue >= PRICE_FLOOR;
+    function _update(address from, address to, uint256 value) internal override(ERC20, ERC20Pausable) {
+        super._update(from, to, value);
     }
-
-    /**
-     * @dev Allows the owner to pause the contract.
-     */
-    function pauseContract() external payable onlyOwner {
-        _pause();
-    }
-
-    /**
-     * @dev Allows the owner to unpause the contract.
-     */
-    function unpauseContract() external payable onlyOwner {
-        _unpause();
-    }
-
-    /**
-     * This method is an example of how to interact with the Pyth contract.
-     * Fetch the priceUpdate from Hermes and pass it to the Pyth contract to update the prices.
-     * Add the priceUpdate argument to any method on your contract that needs to read the Pyth price.
-     * See https://docs.pyth.network/price-feeds/fetch-price-updates for more information on how to fetch the priceUpdate.
- 
-     * @param priceUpdate The encoded data to update the contract with the latest price
-     */
-    function getLatestPrice(bytes[] calldata priceUpdate)
-        public
-        payable
-        returns (PythStructs.Price memory)
-    {
-        // Submit a priceUpdate to the Pyth contract to update the on-chain price.
-        // Updating the price requires paying the fee returned by getUpdateFee.
-        // WARNING: These lines are required to ensure the getPriceNoOlderThan call below succeeds. If you remove them, transactions may fail with "0x19abf40e" error.
-        uint256 fee = pyth.getUpdateFee(priceUpdate);
-        pyth.updatePriceFeeds{value: fee}(priceUpdate);
-
-        // Read the current price from a price feed if it is less than 60 seconds old.
-        // Each price feed (e.g., USDT/USD) is identified by a price feed ID.
-        // The complete list of feed IDs is available at https://pyth.network/developers/price-feed-ids
-        bytes32 priceFeedId = usdtUsdPriceFeedId; // USDT/USD
-        PythStructs.Price memory price = pyth.getPriceNoOlderThan(
-            priceFeedId,
-            60
-        );
-        require(price.price > 0, "Invalid price data"); // Ensure positive price
-        return price;
-    }
-
-    function mint(address to, uint256 amount) external onlyOwner nonReentrant {
-        require(!blacklisted[to], "Address is blacklisted");
-        require(!frozen[to], "Address is frozen");
-        require(reserveBalance >= (totalSupply() + amount) * 1e18, "Insufficient reserves");
-
-        _mint(to, amount);
-        emit Mint(to, amount);
-    }
-
-    function burn(uint256 amount) external onlyOwner nonReentrant {
-        _burn(_msgSender(), amount);
-        emit Burn(_msgSender(), amount);
-    }
-    
-
-    function setfreeze(address account,bool status) external onlyOwner {
-        frozen[account] = status;
-         emit Frozen(account, status);
-    }
-    
-   
-
-    function setBlacklist(address account, bool status) external onlyOwner {
-        blacklisted[account] = status;
-        emit Blacklisted(account, status);
-    }
-    
-
     function pause() external onlyOwner {
         _pause();
     }
 
     function unpause() external onlyOwner {
         _unpause();
-    }
-
-    function updateOracle(address _pythOracle) external onlyOwner {
-        pythOracle = _pythOracle;
-        emit OracleUpdated(_pythOracle);
-    }
-
-    function adjustSupply() external onlyOwner {
-        PythStructs.Price memory price = pyth.getPriceNoOlderThan(
-            usdtUsdPriceFeedId,
-            60
-        );
-        require(price.price > 0, "Invalid price data"); // Ensure positive price
-        uint256 currentPrice = uint256(uint64(price.price));
-        unchecked {
-            if (currentPrice > 1 * SCALING_FACTOR) {
-                _mint(owner(), currentPrice - SCALING_FACTOR);
-            } else if (currentPrice < 1 * SCALING_FACTOR) {
-                _burn(owner(), SCALING_FACTOR - currentPrice);
-            }
-        }
-    }
-
-    
-
-    // Function to update the initial supply (onlyOwner)
-    function setInitialSupply(uint256 _newInitialSupply) external onlyOwner {
-        require(_newInitialSupply >= maxSupply, "Initial supply cannot exceed max supply");
-        _mint(owner(), _newInitialSupply - totalSupply());
     }
 }

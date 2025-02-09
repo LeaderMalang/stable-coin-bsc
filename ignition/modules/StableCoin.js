@@ -5,23 +5,27 @@ const StableCoinModule = buildModule("StableCoin", (m) => {
 
 
    // Parameters required for contract deployment
-   const tokenName = m.getParameter("tokenName", "SUSD");
-   const tokenSymbol = m.getParameter("tokenSymbol", "SUSD");
-   const initialSupply = m.getParameter("initialSupply", ethers.parseUnits("1000000", 18)); // 1M tokens
-   const maxSupply = m.getParameter("maxSupply", ethers.parseUnits("100000000", 18)); // 100M tokens
+  //  const tokenName = m.getParameter("tokenName", "SUSD");
+  //  const tokenSymbol = m.getParameter("tokenSymbol", "SUSD");
+  //  const initialSupply = m.getParameter("initialSupply", ethers.parseUnits("1000000", 18)); // 1M tokens
+  //  const maxSupply = m.getParameter("maxSupply", ethers.parseUnits("100000000", 18)); // 100M tokens
    const priceFeedId = m.getParameter(
      "priceFeedId",
-     "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b" // Default USDT/USD Price Feed
+     "0xEca2605f0BCF2BA5966372C99837b1F182d3D620" // Default USDT/USD Price Feed
    );
-   const pythOracle = m.getParameter(
-     "pythOracle",
-     "0x5744Cbf430D99456a0A8771208b674F27f8EF0Fb" // Placeholder oracle address
+   const usdt_address = m.getParameter(
+     "usdt_address",
+     "0xaB1a4d4f1D656d2450692D237fdD6C7f9146e814" // Placeholder oracle address
    );
+   const router_address = m.getParameter(
+    "router_address",
+    "0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3" // Placeholder oracle address
+  );
  
    // Deploying the StableCoin contract
    const StableCoin = m.contract(
      "StableCoin",
-     [tokenName, tokenSymbol, initialSupply, maxSupply, priceFeedId, pythOracle],
+     [router_address, priceFeedId, usdt_address],
      { id: "StableCoin" }
    );
  

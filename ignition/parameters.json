@@ -1,10 +1,7 @@
 {
   "KhacToken": {
-    "priceFeedId": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",//
-    "pythOracle": "0x5744Cbf430D99456a0A8771208b674F27f8EF0Fb",
-    "tokenName": "MMUSD",
-    "tokenSymbol": "MMUSD",
-    "initialSupply": "1000000000000000000000000000",
-    "maxSupply": "1000000000000000000000000000000000"
+    "priceFeedId": "0xEca2605f0BCF2BA5966372C99837b1F182d3D620",
+    "usdt_address": "0xaB1a4d4f1D656d2450692D237fdD6C7f9146e814",
+    "router_address": "0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3"
   }
 }

@@ -8,7 +8,7 @@ const API_KEY = process.env.API_KEY;
 module.exports = {
   solidity: {
    
-        version: "0.8.22",
+        version: "0.8.20",
         settings: {
           evmVersion: "istanbul",
           optimizer: {
